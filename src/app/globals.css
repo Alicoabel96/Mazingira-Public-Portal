@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Base reset / typography */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: #f0f2f0;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Skip-link for keyboard users (a11y) */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  padding: 8px 16px;
+  background: #0d3a30;
+  color: #fff;
+  z-index: 9999;
+  border-radius: 4px;
+}
+.skip-link:focus { left: 8px; }
+
+/* Scrollbars */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #e8e8e8; }
+::-webkit-scrollbar-thumb { background: #2a9d87; border-radius: 3px; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─── Stats ticker animation ──────────────────────────────────────────────
+   Defined in plain CSS (not Tailwind) so it works in Tailwind v3 and v4
+   with zero config. */
+@keyframes statsScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.stats-ticker-track {
+  animation: statsScroll 35s linear infinite;
+  will-change: transform;
+}
+.stats-ticker-track:hover,
+.stats-ticker-track:focus-within {
+  animation-play-state: paused;
+}
+
+/* Leaflet tooltip override */
+.tz-tip {
+  background: #fff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1) !important;
+  font-size: 12px !important;
+  padding: 4px 9px !important;
+}
+.tz-tip::before { display: none !important; }
+.leaflet-tooltip { padding: 4px 9px !important; border-radius: 4px !important; }
+.leaflet-control-zoom a {
+  font-size: 16px !important;
+  line-height: 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* line-clamp fallback */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}

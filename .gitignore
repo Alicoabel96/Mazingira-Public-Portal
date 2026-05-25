@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# production
+.next/
+out/
+build/
+
+# misc
+.DS_Store
+*.log
+.env*.local
+.env
+
+# Vercel
+.vercel
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+Thumbs.db
+__MACOSX/
