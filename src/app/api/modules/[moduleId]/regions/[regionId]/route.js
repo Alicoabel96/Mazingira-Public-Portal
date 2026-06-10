@@ -1,215 +1,115 @@
 /**
  * GET /api/modules/[moduleId]/regions/[regionId]?district=[districtId]
  *
- * regionId "national" → returns whole-Tanzania aggregate data (self-contained).
+ * regionId "national" → whole-Tanzania aggregate (fully self-contained).
  * All other regionIds → calls getDashboardData from data.js.
  */
 import { getDashboardData } from "@/lib/db/data";
 
-// ── National data (self-contained — no import from data.js needed) ────────────
-const NATIONAL = {
-  cooking: {
-    beneficiaries: "18,420,000", energyValue: "2,140,000,000", energyUnit: "Joules",
-    institutes: 1840, institutePct: 44, forestSaved: "3,240,000", progressPct: 62,
-    charcoal: [
-      { label: "284,000 Tons", note: "Equivalent to 342,000 km²", desc: "Charcoal saved nationally" },
-      { label: "99,400 Tons",  note: "CO₂ emissions avoided",     desc: "Annual greenhouse gas reduction" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "Individual Households", count: 620, pct: 58 },
-      { label: "Private Companies",     count: 280, pct: 26 },
-      { label: "Government",            count: 160, pct: 12 },
-      { label: "Others",                count: 42,  pct: 4  },
-    ],
-    supplyCategory: "Cooking Gas / Solar",
-  },
-  tree: {
-    beneficiaries: "42,600,000", energyValue: "840,000", energyUnit: "Hectares",
-    institutes: 620, institutePct: 58, forestSaved: "840,000", progressPct: 61,
-    charcoal: [
-      { label: "42,600,000 Trees", note: "Planted 2020–2024",       desc: "Native species across all 31 regions" },
-      { label: "1,240 Species",    note: "Indigenous species used",  desc: "Biodiversity-focused national programme" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "Community Groups", count: 284, pct: 52 },
-      { label: "Government TFS",   count: 168, pct: 30 },
-      { label: "NGOs / CBOs",      count: 98,  pct: 14 },
-      { label: "Private Sector",   count: 28,  pct: 4  },
-    ],
-    supplyCategory: "Seedling Source",
-  },
-  waste: {
-    beneficiaries: "18,400,000", energyValue: "1,840,000", energyUnit: "Metric Tons/Year",
-    institutes: 842, institutePct: 54, forestSaved: "1,840,000", progressPct: 58,
-    charcoal: [
-      { label: "1,840,000 Tons", note: "Collected nationally 2024", desc: "Municipal solid waste managed" },
-      { label: "486,000 Tons",   note: "Recycled or composted",     desc: "Waste diverted from dumpsites" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "Private Operators", count: 348, pct: 54 },
-      { label: "Municipalities",    count: 246, pct: 32 },
-      { label: "CBOs",              count: 98,  pct: 11 },
-      { label: "Others",            count: 18,  pct: 3  },
-    ],
-    supplyCategory: "Collection Type",
-  },
-  water: {
-    beneficiaries: "28,400,000", energyValue: "486,000", energyUnit: "m³/day",
-    institutes: 3840, institutePct: 62, forestSaved: "1,240,000", progressPct: 68,
-    charcoal: [
-      { label: "3,840 Water Points", note: "Functional as of 2024",    desc: "Boreholes, springs & piped schemes" },
-      { label: "284 Major Schemes",  note: "Gravity-fed piped systems", desc: "Serving rural communities" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "RUWASA / DWSAs",    count: 1640, pct: 46 },
-      { label: "Community Schemes", count: 1240, pct: 36 },
-      { label: "NGO-Supported",     count: 620,  pct: 14 },
-      { label: "Private Kiosks",    count: 128,  pct: 4  },
-    ],
-    supplyCategory: "Provider Type",
-  },
-  forests: {
-    beneficiaries: "12,400,000", energyValue: "6,842", energyUnit: "Species",
-    institutes: 184, institutePct: 62, forestSaved: "28,400,000", progressPct: 74,
-    charcoal: [
-      { label: "28.4M hectares", note: "Gazetted forest area",      desc: "Total gazetted forests nationwide" },
-      { label: "6,842 Species",  note: "Flora & fauna inventoried", desc: "National biodiversity database" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "TANAPA",            count: 68, pct: 46 },
-      { label: "TAWA",              count: 42, pct: 28 },
-      { label: "District Councils", count: 46, pct: 18 },
-      { label: "NGOs / CBOs",       count: 24, pct: 8  },
-    ],
-    supplyCategory: "Management Authority",
-  },
-  wildlife: {
-    beneficiaries: "2,840", energyValue: "384", energyUnit: "Cases/Year",
-    institutes: 124, institutePct: 68, forestSaved: "14,200,000", progressPct: 78,
-    charcoal: [
-      { label: "2,840 Species",  note: "Under national monitoring", desc: "Fauna tracked across all parks" },
-      { label: "842 Operations", note: "Anti-poaching ops 2024",    desc: "Joint TAWA-TANAPA operations" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "TANAPA",                count: 48, pct: 52 },
-      { label: "TAWA",                  count: 32, pct: 30 },
-      { label: "District Councils",     count: 18, pct: 14 },
-      { label: "Private Conservancies", count: 4,  pct: 4  },
-    ],
-    supplyCategory: "Management Authority",
-  },
-  carbon: {
-    beneficiaries: "147", energyValue: "12,400,000", energyUnit: "tCO₂e",
-    institutes: 124, institutePct: 38, forestSaved: "12,400,000", progressPct: 52,
-    charcoal: [
-      { label: "147 Projects",      note: "VCS & Gold Standard verified", desc: "REDD+ and afforestation projects" },
-      { label: "12,400,000 tCO₂e", note: "Credits issued 2024",         desc: "Community revenue: $42M" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "International Buyers", count: 68, pct: 48 },
-      { label: "Government Offtake",   count: 42, pct: 28 },
-      { label: "Local Market",         count: 28, pct: 16 },
-      { label: "Voluntary Offset",     count: 12, pct: 8  },
-    ],
-    supplyCategory: "Carbon Buyer Type",
-  },
-  blue: {
-    beneficiaries: "284,000", energyValue: "842,000", energyUnit: "Metric Tons",
-    institutes: 184, institutePct: 44, forestSaved: "14,200", progressPct: 58,
-    charcoal: [
-      { label: "284,000 Fishers", note: "Licensed nationally 2024", desc: "Artisanal, commercial & aquaculture" },
-      { label: "124 MPAs",        note: "Marine protected areas",   desc: "Indian Ocean & Lake Victoria zones" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "Artisanal Fishers",   count: 168, pct: 56 },
-      { label: "Commercial Boats",    count: 68,  pct: 24 },
-      { label: "Cooperatives / BMUs", count: 42,  pct: 14 },
-      { label: "Aquaculture Farms",   count: 18,  pct: 6  },
-    ],
-    supplyCategory: "Fishing / Aquaculture Method",
-  },
-  climate: {
-    beneficiaries: "284", energyValue: "3,400,000", energyUnit: "tCO₂e/Year",
-    institutes: 142, institutePct: 48, forestSaved: "3,400,000", progressPct: 54,
-    charcoal: [
-      { label: "284 Projects",       note: "NDC adaptation & mitigation",    desc: "National climate action" },
-      { label: "840,000 Households", note: "Climate-vulnerable HHs supported", desc: "Resilience programmes" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "Green Climate Fund", count: 112, pct: 46 },
-      { label: "Government Budget",  count: 84,  pct: 32 },
-      { label: "NGO / Development",  count: 46,  pct: 16 },
-      { label: "Private Sector",     count: 14,  pct: 6  },
-    ],
-    supplyCategory: "Climate Finance Source",
-  },
-  pollution: {
-    beneficiaries: "842", energyValue: "184,000", energyUnit: "Metric Tons",
-    institutes: 284, institutePct: 62, forestSaved: "842", progressPct: 66,
-    charcoal: [
-      { label: "842 Sites",    note: "Remediated nationally 2024",  desc: "Industrial & urban site cleanups" },
-      { label: "284 Stations", note: "Air & water quality monitors", desc: "NEMC national monitoring network" },
-    ],
-    highPriority: [],
-    suppliers: [
-      { label: "Licensed Private",   count: 128, pct: 52 },
-      { label: "NEMC / Government",  count: 84,  pct: 28 },
-      { label: "NGOs",               count: 46,  pct: 14 },
-      { label: "CBOs",               count: 18,  pct: 6  },
-    ],
-    supplyCategory: "Remediation Operator",
-  },
+// ── Module metadata (titles, themes, labels) ──────────────────────────────────
+const MODULE_META = {
+  waste:     { title: "Measuring Waste Management Effectiveness",        theme: { primary: "#0b736c", dark: "#0d3a30", soft: "#d6f5f2" } },
+  tree:      { title: "Tracking Tree Planting Progress Across Tanzania", theme: { primary: "#2f9e44", dark: "#1b5e20", soft: "#dff5df" } },
+  carbon:    { title: "Carbon Trade & Emissions Reduction Impact",       theme: { primary: "#495057", dark: "#212529", soft: "#e9ecef" } },
+  project:   { title: "Environmental Project Management Dashboard",      theme: { primary: "#5a4fcf", dark: "#2d2a7a", soft: "#e8e6fa" } },
+  climate:   { title: "Climate Change Indicators & Responses",           theme: { primary: "#e67e22", dark: "#a84a00", soft: "#fcecdb" } },
+  forests:   { title: "Forest Cover Conservation & Monitoring",          theme: { primary: "#1e7d32", dark: "#0f4820", soft: "#d8ecdb" } },
+  pollution: { title: "Pollution Monitoring & Control Measures",         theme: { primary: "#8e44ad", dark: "#5b2a7a", soft: "#ebdcf2" } },
+  chemical:  { title: "Hazardous Chemical Management & Sites",           theme: { primary: "#c0392b", dark: "#7a1f16", soft: "#f8dcd8" } },
+  wildlife:  { title: "Wildlife Conservation & Species Tracking",        theme: { primary: "#a47148", dark: "#5c3a1e", soft: "#f0e4d6" } },
+  biotech:   { title: "Biotechnology Research & Applications",           theme: { primary: "#d4348a", dark: "#7a1749", soft: "#f7daea" } },
+  city:      { title: "Urban & Rural Development Planning",              theme: { primary: "#3182ce", dark: "#1a4e80", soft: "#dbe9f6" } },
+  cooking:   { title: "Measuring the Impact of Clean Cooking",           theme: { primary: "#0b736c", dark: "#145244", soft: "#d6f5f2" } },
+  water:     { title: "Water Sources & Sanitation Access",               theme: { primary: "#0891b2", dark: "#0c4a55", soft: "#d6eef3" } },
+  invasive:  { title: "Invasive Species Detection & Control",            theme: { primary: "#7c2d12", dark: "#451a0a", soft: "#f0e0d8" } },
+  blue:      { title: "Blue Economy — Marine & Coastal Resources",       theme: { primary: "#1565c0", dark: "#0b3d7a", soft: "#d8e3f3" } },
+  chemical2: { title: "Chemical Waste & Hazardous Sites Management",     theme: { primary: "#c0392b", dark: "#7a1f16", soft: "#f8dcd8" } },
+  aquatic:   { title: "Aquatic Ecosystems Health Monitoring",            theme: { primary: "#0d7377", dark: "#084b4d", soft: "#d5ecee" } },
+  dodoma:    { title: "Green Dodoma City Initiative Progress",           theme: { primary: "#6a994e", dark: "#3d5c2d", soft: "#e2ecdb" } },
+  wetland:   { title: "Wetland Conservation & Management",               theme: { primary: "#2a9d8f", dark: "#175e55", soft: "#d7ece9" } },
+  gender:    { title: "Gender & Environment — Inclusion Metrics",        theme: { primary: "#d62976", dark: "#7a1545", soft: "#f5d9e6" } },
 };
 
-const DEFAULT_NATIONAL = {
-  beneficiaries: "12,400,000", energyValue: "420,000", energyUnit: "Units",
-  institutes: 480, institutePct: 42, forestSaved: "624,000", progressPct: 48,
-  charcoal: [
-    { label: "624,000 Units", note: "National programme 2024", desc: "Primary national impact indicator" },
-    { label: "420,000 Units", note: "Annual trend",            desc: "Secondary national indicator" },
-  ],
-  highPriority: [],
-  suppliers: [
-    { label: "Government",     count: 184, pct: 44 },
-    { label: "Private Sector", count: 142, pct: 32 },
-    { label: "NGOs / CBOs",    count: 98,  pct: 18 },
-    { label: "Others",         count: 28,  pct: 6  },
-  ],
-  supplyCategory: "Implementation Partner",
+// ── Module-specific labels ────────────────────────────────────────────────────
+const MODULE_LABELS = {
+  cooking:   { stat1Label: "Number of Beneficiaries",           stat2Label: "Estimated Energy Usage",         stat2Unit: "Joules",          instituteLine1: "Institutions Using Clean Energy",      instituteLine2: "of All Institutions",      impactTitle: "Impact of Clean Cooking Adoption",         impactMetric: "ha",       impactDesc: "Forest area saved by switching to clean cooking energy.",              impactProgress: "Clean energy adoption progress",  supplierIntro: "Clean Energy Supplier — by type"            },
+  tree:      { stat1Label: "Trees Successfully Planted",        stat2Label: "Land Area Restored",             stat2Unit: "Hectares",         instituteLine1: "Institutions Supporting Reforestation", instituteLine2: "of All Institutions",      impactTitle: "Environmental Impact of Tree Planting",    impactMetric: "ha",       impactDesc: "Total degraded land area restored and reforested.",                    impactProgress: "Reforestation target progress",   supplierIntro: "Seedling Supply Source — by provider"       },
+  waste:     { stat1Label: "Households Served",                 stat2Label: "Solid Waste Collected",          stat2Unit: "Metric Tons/Year", instituteLine1: "Registered Waste Management Facilities",instituteLine2: "of All Facilities",        impactTitle: "Waste Diversion Impact",                   impactMetric: "tons",     impactDesc: "Total waste diverted from open dumping through managed collection.",   impactProgress: "Collection coverage target",      supplierIntro: "Waste Collection Operator — by category"    },
+  water:     { stat1Label: "People with Safe Water Access",     stat2Label: "Daily Supply Capacity",          stat2Unit: "m³/day",           instituteLine1: "Functional Water Supply Points",        instituteLine2: "of All Water Points",      impactTitle: "Water Access & Catchment Impact",          impactMetric: "km²",      impactDesc: "Total watershed area under active protection and management.",         impactProgress: "Safe water access target",        supplierIntro: "Water Supply Provider — by operator"        },
+  forests:   { stat1Label: "Communities Dependent on Forests",  stat2Label: "Flora & Fauna Species Monitored",stat2Unit: "Species",          instituteLine1: "Forest Reserves Under Active Management",instituteLine2: "of All Gazetted Reserves", impactTitle: "Forest Conservation Coverage",             impactMetric: "ha",       impactDesc: "Total gazetted forest area under active conservation.",                impactProgress: "Forest cover retention target",   supplierIntro: "Forest Management Authority — by category"  },
+  wildlife:  { stat1Label: "Wildlife Species Actively Tracked", stat2Label: "Human-Wildlife Incidents",       stat2Unit: "Cases/Year",       instituteLine1: "Protected Areas & Game Reserves",       instituteLine2: "of All Conservation Areas",impactTitle: "Wildlife Habitat Under Conservation",      impactMetric: "ha",       impactDesc: "Total habitat area under active wildlife conservation.",               impactProgress: "Conservation coverage target",    supplierIntro: "Conservation Management Body — by authority"},
+  carbon:    { stat1Label: "Registered Carbon Projects",        stat2Label: "Carbon Credits Issued",          stat2Unit: "tCO₂e",            instituteLine1: "Verified Carbon Project Partners",      instituteLine2: "of All Partners",          impactTitle: "Cumulative Emissions Reduction",           impactMetric: "tCO₂e",   impactDesc: "Total carbon emissions reduced through registered projects.",          impactProgress: "NDC emission reduction target",   supplierIntro: "Carbon Credit Buyer — by market type"       },
+  blue:      { stat1Label: "Licensed Fishers & Fish Farmers",   stat2Label: "Annual Marine Catch",            stat2Unit: "Metric Tons",      instituteLine1: "Marine Protected Areas (MPAs)",         instituteLine2: "of All Marine Zones",      impactTitle: "Marine & Coastal Conservation Area",       impactMetric: "km²",      impactDesc: "Total marine area under active management and conservation.",          impactProgress: "Marine conservation coverage",    supplierIntro: "Fishing Method — by vessel/gear category"   },
+  climate:   { stat1Label: "Active Adaptation Projects",        stat2Label: "GHG Emissions Reduced",          stat2Unit: "tCO₂e/Year",       instituteLine1: "Climate Action Implementing Agencies",  instituteLine2: "of All Agencies",          impactTitle: "NDC Implementation Progress",              impactMetric: "tCO₂e",   impactDesc: "Total greenhouse gases reduced under Tanzania's NDC commitments.",     impactProgress: "NDC implementation target",       supplierIntro: "Climate Finance Source — by fund type"      },
+  pollution: { stat1Label: "Contaminated Sites Remediated",     stat2Label: "Hazardous Pollutants Removed",   stat2Unit: "Metric Tons",      instituteLine1: "Active Air & Water Monitoring Stations",instituteLine2: "of All Stations",          impactTitle: "Pollution Reduction Impact",               impactMetric: "ha",       impactDesc: "Total land area restored through remediation efforts.",                impactProgress: "Environmental compliance target", supplierIntro: "Remediation Operator — by sector"           },
+  project:   { stat1Label: "Registered Environmental Projects", stat2Label: "Activities Implemented",         stat2Unit: "Activities",       instituteLine1: "Participating Government Institutions",  instituteLine2: "of All Institutions",      impactTitle: "Project Implementation Impact",            impactMetric: "projects", impactDesc: "Total environmental projects successfully completed and verified.",     impactProgress: "Implementation target progress",  supplierIntro: "Project Implementing Partner — by type"     },
+  biotech:   { stat1Label: "Biotechnology Research Projects",   stat2Label: "Species Under Research",         stat2Unit: "Species",          instituteLine1: "Certified Research Institutions",       instituteLine2: "of All Registered Labs",   impactTitle: "Biotechnology Research Impact",            impactMetric: "projects", impactDesc: "Total biotechnology research contributing to environmental conservation.",impactProgress:"Research programme target",         supplierIntro: "Research Partner — by institution type"     },
+  city:      { stat1Label: "Urban Residents Covered",           stat2Label: "Green Infrastructure Projects",  stat2Unit: "Projects",         instituteLine1: "Urban Planning Institutions",            instituteLine2: "of All City Councils",     impactTitle: "Urban & Rural Development Impact",         impactMetric: "ha",       impactDesc: "Total land area improved through urban planning and green infrastructure.",impactProgress:"Urban development target",          supplierIntro: "Development Partner — by sector"            },
+  invasive:  { stat1Label: "Invasive Species Identified",       stat2Label: "Area Under Active Control",      stat2Unit: "Hectares",         instituteLine1: "Control Programme Sites",               instituteLine2: "of All Affected Sites",    impactTitle: "Invasive Species Control Coverage",        impactMetric: "ha",       impactDesc: "Total land and water area cleared of invasive species.",               impactProgress: "Eradication programme target",    supplierIntro: "Control Method — by intervention type"      },
+  wetland:   { stat1Label: "Wetland Communities Supported",     stat2Label: "Wetland Area Under Conservation",stat2Unit: "Hectares",         instituteLine1: "Ramsar & Protected Wetland Sites",      instituteLine2: "of All Designated Sites",  impactTitle: "Wetland Ecosystem Services Value",         impactMetric: "ha",       impactDesc: "Total wetland area providing water purification and flood control.",   impactProgress: "Wetland conservation target",     supplierIntro: "Wetland Management Authority — by category" },
+  aquatic:   { stat1Label: "Lake & River Systems Monitored",    stat2Label: "Aquatic Species Inventoried",    stat2Unit: "Species",          instituteLine1: "Aquatic Monitoring Stations",            instituteLine2: "of All Stations",          impactTitle: "Aquatic Habitat Health Index",              impactMetric: "km",       impactDesc: "Total rivers and lake shoreline under active aquatic monitoring.",     impactProgress: "Water quality compliance target", supplierIntro: "Research & Monitoring Partner — by type"    },
+  gender:    { stat1Label: "Women in Environmental Leadership", stat2Label: "Gender-Responsive Projects",     stat2Unit: "Projects",         instituteLine1: "Institutions with Gender Policies",     instituteLine2: "of All Env. Institutions", impactTitle: "Gender Inclusion Impact",                  impactMetric: "%",        impactDesc: "Percentage increase in women's participation across environmental programmes.",impactProgress:"Gender parity target (50%)",       supplierIntro: "Programme Partner — by type"                },
+  chemical:  { stat1Label: "Hazardous Chemical Sites",          stat2Label: "Chemical Incidents Reported",    stat2Unit: "Cases/Year",       instituteLine1: "Certified Chemical Handling Facilities",instituteLine2: "of All Facilities",        impactTitle: "Chemical Risk Reduction Impact",           impactMetric: "sites",    impactDesc: "Total hazardous chemical sites remediated and brought into compliance.",impactProgress:"Safe chemical management target",   supplierIntro: "Chemical Disposal Operator — by type"       },
+  chemical2: { stat1Label: "Hazardous Chemical Sites",          stat2Label: "Chemical Incidents Reported",    stat2Unit: "Cases/Year",       instituteLine1: "Certified Chemical Handling Facilities",instituteLine2: "of All Facilities",        impactTitle: "Chemical Risk Reduction Impact",           impactMetric: "sites",    impactDesc: "Total hazardous chemical sites remediated and brought into compliance.",impactProgress:"Safe chemical management target",   supplierIntro: "Chemical Disposal Operator — by type"       },
+  dodoma:    { stat1Label: "Trees Planted in Dodoma City",      stat2Label: "Green Cover Area Added",         stat2Unit: "Hectares",         instituteLine1: "Schools & Institutions Participating",  instituteLine2: "of All City Institutions", impactTitle: "Urban Greening Impact",                    impactMetric: "ha",       impactDesc: "Total urban land transformed into green cover under Green Dodoma.",    impactProgress: "Green Dodoma city target",        supplierIntro: "Seedling Supply Partner — by type"          },
 };
+
+const DEFAULT_LABELS = {
+  stat1Label: "Number of Beneficiaries", stat2Label: "Key Performance Metric", stat2Unit: "Units",
+  instituteLine1: "Participating Institutions", instituteLine2: "of All Institutions",
+  impactTitle: "Environmental Impact", impactMetric: "units",
+  impactDesc: "Total area or volume positively impacted by this module's activities.",
+  impactProgress: "Programme target progress", supplierIntro: "Implementation Partner — by category",
+};
+
+// ── National data ─────────────────────────────────────────────────────────────
+const NATIONAL = {
+  cooking:   { beneficiaries: "18,420,000", energyValue: "2,140,000,000", energyUnit: "Joules",          institutes: 1840, institutePct: 44, forestSaved: "3,240,000",  progressPct: 62, charcoal: [{ label: "284,000 Tons",      note: "Equivalent to 342,000 km²",        desc: "Charcoal saved nationally by clean energy"       }, { label: "99,400 Tons",      note: "CO₂ emissions avoided",             desc: "Annual greenhouse gas reduction"          }], highPriority: [], suppliers: [{ label: "Individual Households", count: 620, pct: 58 }, { label: "Private Companies",  count: 280, pct: 26 }, { label: "Government",     count: 160, pct: 12 }, { label: "Others", count: 42,  pct: 4  }], supplyCategory: "Cooking Gas / Solar"       },
+  tree:      { beneficiaries: "42,600,000", energyValue: "840,000",       energyUnit: "Hectares",        institutes: 620,  institutePct: 58, forestSaved: "840,000",    progressPct: 61, charcoal: [{ label: "42,600,000 Trees",  note: "Planted 2020–2024",                desc: "Native species across all 31 regions"            }, { label: "1,240 Species",    note: "Indigenous species used",           desc: "Biodiversity-focused programme"           }], highPriority: [], suppliers: [{ label: "Community Groups",    count: 284, pct: 52 }, { label: "Government TFS",     count: 168, pct: 30 }, { label: "NGOs / CBOs",   count: 98,  pct: 14 }, { label: "Private Sector", count: 28, pct: 4 }], supplyCategory: "Seedling Source"           },
+  waste:     { beneficiaries: "18,400,000", energyValue: "1,840,000",     energyUnit: "Metric Tons/Year",institutes: 842,  institutePct: 54, forestSaved: "1,840,000",  progressPct: 58, charcoal: [{ label: "1,840,000 Tons",    note: "Collected nationally 2024",        desc: "Municipal solid waste managed across Tanzania"   }, { label: "486,000 Tons",     note: "Recycled or composted",             desc: "Waste diverted from dumpsites"            }], highPriority: [], suppliers: [{ label: "Private Operators",  count: 348, pct: 54 }, { label: "Municipalities",     count: 246, pct: 32 }, { label: "CBOs",          count: 98,  pct: 11 }, { label: "Others", count: 18,  pct: 3  }], supplyCategory: "Collection Type"           },
+  water:     { beneficiaries: "28,400,000", energyValue: "486,000",       energyUnit: "m³/day",          institutes: 3840, institutePct: 62, forestSaved: "1,240,000",  progressPct: 68, charcoal: [{ label: "3,840 Water Points", note: "Functional as of 2024",            desc: "Boreholes, springs & piped schemes nationally"   }, { label: "284 Major Schemes",note: "Gravity-fed piped systems",         desc: "Serving rural communities"                }], highPriority: [], suppliers: [{ label: "RUWASA / DWSAs",     count: 1640,pct: 46 }, { label: "Community Schemes", count: 1240,pct: 36 }, { label: "NGO-Supported", count: 620, pct: 14 }, { label: "Private Kiosks", count: 128, pct: 4 }], supplyCategory: "Provider Type"             },
+  forests:   { beneficiaries: "12,400,000", energyValue: "6,842",         energyUnit: "Species",         institutes: 184,  institutePct: 62, forestSaved: "28,400,000", progressPct: 74, charcoal: [{ label: "28.4M hectares",     note: "Gazetted forest area",             desc: "Total gazetted forests across all regions"       }, { label: "6,842 Species",    note: "Flora & fauna inventoried",         desc: "National biodiversity database"           }], highPriority: [], suppliers: [{ label: "TANAPA",            count: 68,  pct: 46 }, { label: "TAWA",               count: 42,  pct: 28 }, { label: "District Councils",count: 46, pct: 18 }, { label: "NGOs / CBOs", count: 24, pct: 8 }], supplyCategory: "Management Authority"      },
+  wildlife:  { beneficiaries: "2,840",      energyValue: "384",           energyUnit: "Cases/Year",      institutes: 124,  institutePct: 68, forestSaved: "14,200,000", progressPct: 78, charcoal: [{ label: "2,840 Species",      note: "Under national monitoring",        desc: "Fauna species tracked across all parks"          }, { label: "842 Operations",   note: "Anti-poaching ops 2024",            desc: "Joint TAWA-TANAPA operations"             }], highPriority: [], suppliers: [{ label: "TANAPA",            count: 48,  pct: 52 }, { label: "TAWA",               count: 32,  pct: 30 }, { label: "District Councils",count: 18, pct: 14 }, { label: "Private Conservancies", count: 4, pct: 4 }], supplyCategory: "Management Authority"  },
+  carbon:    { beneficiaries: "147",        energyValue: "12,400,000",    energyUnit: "tCO₂e",           institutes: 124,  institutePct: 38, forestSaved: "12,400,000", progressPct: 52, charcoal: [{ label: "147 Projects",       note: "VCS & Gold Standard verified",     desc: "REDD+ and afforestation projects nationally"     }, { label: "12,400,000 tCO₂e",note: "Credits issued 2024",               desc: "Community revenue: $42M"                  }], highPriority: [], suppliers: [{ label: "International Buyers",count: 68, pct: 48 }, { label: "Government Offtake", count: 42,  pct: 28 }, { label: "Local Market",  count: 28,  pct: 16 }, { label: "Voluntary Offset", count: 12, pct: 8 }], supplyCategory: "Carbon Buyer Type"        },
+  blue:      { beneficiaries: "284,000",    energyValue: "842,000",       energyUnit: "Metric Tons",     institutes: 184,  institutePct: 44, forestSaved: "14,200",     progressPct: 58, charcoal: [{ label: "284,000 Fishers",    note: "Licensed nationally 2024",         desc: "Artisanal, commercial & aquaculture"             }, { label: "124 MPAs",         note: "Marine protected areas",            desc: "Indian Ocean & Lake Victoria zones"       }], highPriority: [], suppliers: [{ label: "Artisanal Fishers",count: 168, pct: 56 }, { label: "Commercial Boats",   count: 68,  pct: 24 }, { label: "Cooperatives",  count: 42,  pct: 14 }, { label: "Aquaculture Farms", count: 18, pct: 6 }], supplyCategory: "Fishing / Aquaculture"    },
+  climate:   { beneficiaries: "284",        energyValue: "3,400,000",     energyUnit: "tCO₂e/Year",      institutes: 142,  institutePct: 48, forestSaved: "3,400,000",  progressPct: 54, charcoal: [{ label: "284 Projects",       note: "NDC adaptation & mitigation",      desc: "National climate action programmes"              }, { label: "840,000 Households",note:"Climate-vulnerable HHs supported",  desc: "Resilience programmes"                    }], highPriority: [], suppliers: [{ label: "Green Climate Fund", count: 112, pct: 46 }, { label: "Government Budget",  count: 84,  pct: 32 }, { label: "NGO/Development",count: 46,  pct: 16 }, { label: "Private Sector", count: 14, pct: 6 }], supplyCategory: "Climate Finance Source"   },
+  pollution: { beneficiaries: "842",        energyValue: "184,000",       energyUnit: "Metric Tons",     institutes: 284,  institutePct: 62, forestSaved: "842",        progressPct: 66, charcoal: [{ label: "842 Sites",          note: "Remediated nationally 2024",       desc: "Industrial & urban site cleanups"                }, { label: "284 Stations",     note: "Air & water quality monitors",      desc: "NEMC national monitoring network"         }], highPriority: [], suppliers: [{ label: "Licensed Private",  count: 128, pct: 52 }, { label: "NEMC / Government",  count: 84,  pct: 28 }, { label: "NGOs",          count: 46,  pct: 14 }, { label: "CBOs",           count: 18, pct: 6  }], supplyCategory: "Remediation Operator"     },
+  project:   { beneficiaries: "147",        energyValue: "312",           energyUnit: "Activities",      institutes: 204,  institutePct: 48, forestSaved: "147",        progressPct: 52, charcoal: [{ label: "147 Projects",       note: "Registered & active nationally",   desc: "Environmental projects across all sectors"       }, { label: "312 Activities",   note: "Implemented activities 2024",       desc: "Cross-sector environmental actions"       }], highPriority: [], suppliers: [{ label: "Government MDAs",  count: 84,  pct: 46 }, { label: "NGOs / CSOs",        count: 62,  pct: 32 }, { label: "UN Agencies",   count: 28,  pct: 14 }, { label: "Private Sector", count: 14, pct: 8  }], supplyCategory: "Implementing Partner"     },
+  biotech:   { beneficiaries: "84",         energyValue: "428",           energyUnit: "Species",         institutes: 28,   institutePct: 42, forestSaved: "84",         progressPct: 38, charcoal: [{ label: "84 Research Projects",note: "Active nationally",                desc: "Biotech projects in environmental conservation"  }, { label: "428 Species",      note: "Under active research",             desc: "Indigenous species under study"           }], highPriority: [], suppliers: [{ label: "Universities",      count: 14,  pct: 48 }, { label: "Research Institutes",count: 8,   pct: 28 }, { label: "Government",    count: 4,   pct: 14 }, { label: "Private Labs",   count: 2,  pct: 10 }], supplyCategory: "Research Institution"     },
+  city:      { beneficiaries: "18,400,000", energyValue: "842",           energyUnit: "Projects",        institutes: 142,  institutePct: 58, forestSaved: "124,000",    progressPct: 56, charcoal: [{ label: "842 Projects",       note: "Urban & rural projects 2024",      desc: "Infrastructure, housing and green space projects" }, { label: "124,000 ha",       note: "Land under development plans",      desc: "Urban & rural planning coverage"          }], highPriority: [], suppliers: [{ label: "Municipal Councils",count: 68,  pct: 52 }, { label: "Central Government", count: 42,  pct: 28 }, { label: "NGOs / CBOs",   count: 18,  pct: 12 }, { label: "Private Sector", count: 12, pct: 8  }], supplyCategory: "Development Partner"      },
+  invasive:  { beneficiaries: "184",        energyValue: "842,000",       energyUnit: "Hectares",        institutes: 84,   institutePct: 46, forestSaved: "842,000",    progressPct: 48, charcoal: [{ label: "184 Species",        note: "Invasive species identified",      desc: "Nationally recorded invasive species"            }, { label: "42 Species",       note: "Under active eradication",          desc: "Priority control programme species"       }], highPriority: [], suppliers: [{ label: "Mechanical Control", count: 42,  pct: 44 }, { label: "Biological Control", count: 22,  pct: 24 }, { label: "Chemical Control",count: 18,  pct: 22 }, { label: "Community",      count: 8,  pct: 10 }], supplyCategory: "Control Method"           },
+  wetland:   { beneficiaries: "1,240,000",  energyValue: "2,840,000",     energyUnit: "Hectares",        institutes: 84,   institutePct: 52, forestSaved: "2,840,000",  progressPct: 61, charcoal: [{ label: "2,840,000 ha",       note: "Wetland area conserved",           desc: "Including Ramsar sites and protected wetlands"   }, { label: "428 Bird Species", note: "Wetland birds monitored",           desc: "Including migratory species"              }], highPriority: [], suppliers: [{ label: "TAWA / Wildlife",   count: 32,  pct: 42 }, { label: "TANAPA",             count: 18,  pct: 28 }, { label: "District Councils",count: 18, pct: 18 }, { label: "NGOs",           count: 8,  pct: 12 }], supplyCategory: "Conservation Authority"   },
+  aquatic:   { beneficiaries: "84",         energyValue: "2,840",         energyUnit: "Species",         institutes: 142,  institutePct: 48, forestSaved: "18,400",     progressPct: 58, charcoal: [{ label: "84 Water Systems",   note: "Lakes, rivers & wetlands",         desc: "All major Tanzanian water bodies monitored"      }, { label: "2,840 Species",    note: "Aquatic species inventoried",       desc: "Fish, invertebrates & aquatic plants"     }], highPriority: [], suppliers: [{ label: "TAFIRI Research",   count: 48,  pct: 44 }, { label: "NEMC Monitoring",    count: 32,  pct: 28 }, { label: "Universities",  count: 28,  pct: 20 }, { label: "NGOs",           count: 8,  pct: 8  }], supplyCategory: "Research & Monitoring Partner"},
+  gender:    { beneficiaries: "48,400",     energyValue: "284",           energyUnit: "Projects",        institutes: 168,  institutePct: 54, forestSaved: "38",         progressPct: 44, charcoal: [{ label: "48,400 Women",       note: "In env. leadership roles",         desc: "Women in forest committees, water boards, etc."  }, { label: "1,240 Groups",     note: "Women-led community groups",        desc: "Environmental management groups"          }], highPriority: [], suppliers: [{ label: "Government / VPO",  count: 68,  pct: 46 }, { label: "NGOs / CSOs",        count: 48,  pct: 32 }, { label: "UN Agencies",   count: 28,  pct: 16 }, { label: "Private Sector", count: 12, pct: 6  }], supplyCategory: "Implementing Partner"     },
+  dodoma:    { beneficiaries: "1,240,000",  energyValue: "2,840",         energyUnit: "Hectares",        institutes: 186,  institutePct: 72, forestSaved: "2,840",      progressPct: 68, charcoal: [{ label: "2,840,000 Trees",    note: "Planted in Dodoma City",           desc: "Roadside, parks & institution planting"          }, { label: "12 Corridors",     note: "Green corridors established",       desc: "Connecting urban green spaces"            }], highPriority: [], suppliers: [{ label: "DCC / Municipality", count: 68,  pct: 52 }, { label: "Schools & Colleges", count: 42,  pct: 28 }, { label: "Community Groups",count: 22, pct: 14 }, { label: "Private Sector", count: 8,  pct: 6  }], supplyCategory: "Planting Partner"         },
+};
+
+const DEFAULT_NATIONAL = { beneficiaries: "12,400,000", energyValue: "420,000", energyUnit: "Units", institutes: 480, institutePct: 42, forestSaved: "624,000", progressPct: 48, charcoal: [{ label: "624,000 Units", note: "National programme 2024", desc: "Primary national impact indicator" }, { label: "420,000 Units", note: "Annual trend", desc: "Secondary national indicator" }], highPriority: [], suppliers: [{ label: "Government", count: 184, pct: 44 }, { label: "Private Sector", count: 142, pct: 32 }, { label: "NGOs / CBOs", count: 98, pct: 18 }, { label: "Others", count: 28, pct: 6 }], supplyCategory: "Implementation Partner" };
 
 export async function GET(req, { params }) {
   try {
     const { moduleId, regionId } = await params;
+    const meta   = MODULE_META[moduleId]   || { title: `${moduleId} Dashboard`,    theme: { primary: "#0b736c", dark: "#145244", soft: "#d6f5f2" } };
+    const labels = MODULE_LABELS[moduleId] || DEFAULT_LABELS;
 
-    // ── National view ──────────────────────────────────────────────────────
+    // ── National view ────────────────────────────────────────────────────────
     if (regionId === "national") {
       const raw = NATIONAL[moduleId] || DEFAULT_NATIONAL;
       return Response.json({
         data: {
-          module:    { id: moduleId, label: moduleId, title: `${moduleId} — National Overview`, theme: null },
+          module:    { id: moduleId, label: moduleId, title: meta.title, theme: meta.theme },
           region:    { id: "national", name: "Tanzania (National)", priority: "very-high" },
           district:  null,
           districts: ["All Districts"],
+          labels,
           ...raw,
         },
       });
     }
 
-    // ── Regional view ──────────────────────────────────────────────────────
+    // ── Regional view ────────────────────────────────────────────────────────
     let districtId = null;
-    try {
-      districtId = new URL(req.url).searchParams.get("district") || null;
-    } catch {}
+    try { districtId = new URL(req.url).searchParams.get("district") || null; } catch {}
 
     const data = await getDashboardData(moduleId, regionId, districtId);
     if (!data) {
@@ -218,7 +118,15 @@ export async function GET(req, { params }) {
         { status: 404 }
       );
     }
-    return Response.json({ data });
+
+    // Ensure labels and theme are always present even if data.js version is older
+    return Response.json({
+      data: {
+        ...data,
+        labels: data.labels || labels,
+        module: { ...data.module, theme: data.module?.theme || meta.theme },
+      },
+    });
 
   } catch (err) {
     console.error("[dashboard route error]", err);
