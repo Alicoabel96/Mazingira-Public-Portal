@@ -76,3 +76,10 @@ body {
   overflow: hidden;
   white-space: normal;
 }
+
+/* Loading bar animation for dashboard re-fetches */
+@keyframes loading-bar {
+  0%   { left: -33%; width: 33%; }
+  50%  { left: 33%;  width: 33%; }
+  100% { left: 100%; width: 33%; }
+}

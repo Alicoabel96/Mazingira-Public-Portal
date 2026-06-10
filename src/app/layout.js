@@ -9,9 +9,12 @@ const jost = Jost({
 });
 
 export const metadata = {
-  title: "eMazingira — Environmental Management Information System",
+  title: "Mazingira Portal",
   description:
     "Tanzania's platform for accessing a wide range of environmental data.",
+  icons: {
+    icon: "/images/mazingira_icon.png",   // ← path inside your public/ folder
+  },
 };
 
 export default function RootLayout({ children }) {

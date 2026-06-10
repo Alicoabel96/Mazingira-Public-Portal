@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 const LANGUAGES = [
-  { code: "en", label: "English",  short: "EN", flag: "/images/uk-flag.svg" },
-  { code: "sw", label: "Swahili",  short: "SW", flag: "/images/tz-flag.svg" },
+  { code: "en", label: "English",  short: "ENGLISH", flag: "/images/uk-flag.svg" },
+  { code: "sw", label: "Swahili",  short: "SWAHILI", flag: "/images/tz-flag.svg" },
 ];
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher() {  
   const [active, setActive] = useState(LANGUAGES[0]);
   const [open,   setOpen]   = useState(false);
   const rootRef = useRef(null);
@@ -54,7 +54,7 @@ export default function LanguageSwitcher() {
       {open && (
         <ul
           role="listbox"
-          className="absolute right-0 top-full mt-1 min-w-[150px] bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden z-50 py-1"
+          className="absolute right-0 top-full mt-1 min-w-37.5 bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden z-50 py-1"
         >
           {LANGUAGES.map((lang) => {
             const isActive = lang.code === active.code;

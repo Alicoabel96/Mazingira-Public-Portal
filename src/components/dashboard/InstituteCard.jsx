@@ -1,6 +1,12 @@
 import { IconBuilding } from "@/components/icons/StatIcons";
 
-export default function InstituteCard({ count, percent, theme }) {
+export default function InstituteCard({
+  count,
+  percent,
+  theme,
+  line1 = "Institute Using Clean Energy",
+  line2 = "of all Institutes",
+}) {
   const bg = theme?.primary || "#2a9d87";
 
   return (
@@ -16,10 +22,10 @@ export default function InstituteCard({ count, percent, theme }) {
       </span>
       <div>
         <p className="text-[10.5px] text-white/90 uppercase tracking-wider font-bold m-0">
-          Institute Using Clean Energy
+          {line1}
         </p>
         <p className="text-[10.5px] text-white/60 mt-0.5">
-          ({percent}% of all Institutes)
+          ({percent}% {line2})
         </p>
       </div>
     </div>

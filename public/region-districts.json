@@ -1,0 +1,231 @@
+{
+  "Pwani": [
+    "Bagamoyo",
+    "Kibaha",
+    "Kibaha Urban",
+    "Kisarawe",
+    "Mafia",
+    "Mkuranga",
+    "Rufiji"
+  ],
+  "Simiyu": [
+    "Bariadi",
+    "Busega",
+    "Butiam",
+    "Itilima",
+    "Maswa",
+    "Meatu"
+  ],
+  "Geita": [
+    "Bukombe",
+    "Chato",
+    "Geita",
+    "Mbogwe",
+    "Nyang'hwale"
+  ],
+  "Singida": [
+    "Bahi",
+    "Ikungi",
+    "Iramba",
+    "Manyoni",
+    "Mkalama",
+    "Singida",
+    "Singida Urban"
+  ],
+  "Iringa": [
+    "Iringa",
+    "Iringa Urban",
+    "Kilolo",
+    "Mafinga Township Authority",
+    "Mufindi"
+  ],
+  "Rukwa": [
+    "Kalambo",
+    "Nkasi",
+    "Sumbawanga",
+    "Sumbawanga Urban"
+  ],
+  "Kagera": [
+    "Biharamulo",
+    "Bukoba",
+    "Bukoba Urban",
+    "Karagwe",
+    "Kyerwa",
+    "Missenyi",
+    "Muleba",
+    "Ngara"
+  ],
+  "Kigoma": [
+    "Buhigwe",
+    "Kakonko",
+    "Kasulu",
+    "Kasulu Township Authority",
+    "Kibondo",
+    "Kigoma",
+    "Kigoma  Urban"
+  ],
+  "Lindi": [
+    "Kilwa",
+    "Lindi",
+    "Lindi Urban",
+    "Liwale",
+    "Nachingwea",
+    "Ruangwa"
+  ],
+  "Dar es salaam": [
+    "Ilala",
+    "Kinondoni",
+    "Temeke"
+  ],
+  "Dodoma": [
+    "Chamwino",
+    "Chemba",
+    "Dodoma Urban",
+    "Kondoa",
+    "Kongwa",
+    "Mpwapwa"
+  ],
+  "Tanga": [
+    "Handeni",
+    "Handeni Mji",
+    "Kilindi",
+    "Korogwe",
+    "Korogwe Township Authority",
+    "Lushoto",
+    "Mkinga",
+    "Muheza",
+    "Pangani",
+    "Tanga Urban"
+  ],
+  "Mtwara": [
+    "Masasi",
+    "Masasi  Township Authority",
+    "Mtwara",
+    "Mtwara Urban",
+    "Nanyumbu",
+    "Newala",
+    "Tandahimba"
+  ],
+  "Njombe": [
+    "Ludewa",
+    "Makambako Township Authority",
+    "Makete",
+    "Njombe",
+    "Njombe Urban",
+    "Wanging'ombe"
+  ],
+  "Tabora": [
+    "Igunga",
+    "Kaliua",
+    "Sikonge",
+    "Tabora Urban",
+    "Urambo",
+    "Uyui"
+  ],
+  "Kilimanjaro": [
+    "Hai",
+    "Moshi",
+    "Moshi Urban",
+    "Mwanga",
+    "Rombo",
+    "Same",
+    "Siha"
+  ],
+  "Shinyanga": [
+    "Kahama",
+    "Kahama Township Authority",
+    "Kishapu",
+    "Nzega",
+    "Shinyanga",
+    "Shinyanga Urban"
+  ],
+  "Mara": [
+    "Bunda",
+    "Musoma",
+    "Musoma Urban",
+    "Rorya",
+    "Serengeti",
+    "Tarime"
+  ],
+  "Ruvuma": [
+    "Mbinga",
+    "Namtumbo",
+    "Nyasa",
+    "Songea",
+    "Songea Urban",
+    "Tunduru"
+  ],
+  "Mwanza": [
+    "Ilemela",
+    "Kwimba",
+    "Magu",
+    "Misungwi",
+    "Nyamagana",
+    "Sengerema",
+    "Ukerewe"
+  ],
+  "Mbeya": [
+    "Chunya",
+    "Ileje",
+    "Kyela",
+    "Mbarali",
+    "Mbeya",
+    "Mbeya Urban",
+    "Mbozi",
+    "Momba",
+    "Rungwe",
+    "Tunduma"
+  ],
+  "Arusha": [
+    "Arusha",
+    "Arusha Urban",
+    "Babati",
+    "Karatu",
+    "Longido",
+    "Meru",
+    "Monduli",
+    "Ngorongoro"
+  ],
+  "Morogoro": [
+    "Gairo",
+    "Kilombero",
+    "Kilosa",
+    "Morogoro",
+    "Morogoro Urban",
+    "Mvomero",
+    "Ulanga"
+  ],
+  "Katavi": [
+    "Mlele",
+    "Mpanda",
+    "Mpanda Urban",
+    "Uvinza"
+  ],
+  "Manyara": [
+    "Babati Urban",
+    "Hanang",
+    "Kiteto",
+    "Mbulu",
+    "Simanjiro"
+  ],
+  "Kusini Pemba": [
+    "Chake Chake",
+    "Mkoani"
+  ],
+  "Kaskazini Unguja": [
+    "Kaskazini A",
+    "Kaskazini B"
+  ],
+  "Kusini Unguja": [
+    "Kati",
+    "Kusini"
+  ],
+  "Mjini Magharibi": [
+    "Magharibi",
+    "Mjini"
+  ],
+  "Kaskazini Pemba": [
+    "Micheweni",
+    "Wete"
+  ]
+}

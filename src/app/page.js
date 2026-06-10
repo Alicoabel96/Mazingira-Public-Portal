@@ -8,17 +8,13 @@ import {
   getFooterLinks,
 } from "@/lib/db/data";
 
-import AnnouncementBar from "@/components/layout/AnnouncementBar";
-import SiteHeader      from "@/components/layout/SiteHeader";
-import NavBar          from "@/components/layout/NavBar";
-import StickyBanner    from "@/components/layout/StickyBanner";
-import StatsTicker     from "@/components/layout/StatsTicker";
-import HeroCarousel    from "@/components/hero/HeroCarousel";
+import AppHeader      from "@/components/layout/AppHeader";
+import StatsTicker    from "@/components/layout/StatsTicker";
+import HeroCarousel   from "@/components/hero/HeroCarousel";
 import ModuleDashboard from "@/components/dashboard/ModuleDashboard";
-import Footer          from "@/components/layout/Footer";
+import Footer         from "@/components/layout/Footer";
 
 export default async function Home() {
-  // Parallel server-side fetches — data is pre-rendered, no client waterfall.
   const [announcement, navLinks, stats, slides, regions, modules, footer] =
     await Promise.all([
       getAnnouncement(),
@@ -32,15 +28,9 @@ export default async function Home() {
 
   return (
     <>
-      {/* Sticky top — header + nav stay fixed on scroll, announcement hides */}
-      <StickyBanner
-        announcement={<AnnouncementBar message={announcement} />}
-      >
-        <SiteHeader />
-        <NavBar links={navLinks} />
-      </StickyBanner>
+      {/* Unified scroll-aware header */}
+      <AppHeader announcement={announcement} navLinks={navLinks} />
 
-      {/* Ticker and hero stay in the normal document flow */}
       <StatsTicker initialStats={stats} />
       <HeroCarousel initialSlides={slides} />
 

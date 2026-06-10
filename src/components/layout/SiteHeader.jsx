@@ -4,13 +4,17 @@ import { useState } from "react";
 import Image from "next/image";
 import LanguageSwitcher from "./LanguageSwitcher";
 
+// Primary green — matches dashboard accents and carousel cards
+const PRIMARY_GREEN = "#0b736c";
+
 export default function SiteHeader() {
   const [query, setQuery] = useState("");
 
   return (
     <div className="w-full bg-white">
       <div className="w-full px-4 md:px-8 lg:px-10 py-4 flex items-center justify-between gap-4">
-        {/* Left — Government emblem */}
+
+        {/* Left — Government coat of arms */}
         <div className="shrink-0">
           <Image
             src="/images/coat-of-arms.png"
@@ -22,7 +26,7 @@ export default function SiteHeader() {
           />
         </div>
 
-        {/* Center — Search */}
+        {/* Center — Search bar */}
         <div className="flex-1 flex justify-center">
           <form
             role="search"
@@ -57,10 +61,16 @@ export default function SiteHeader() {
               className="flex-1 h-14 bg-[#f4f4f4] px-4 text-[15px] text-gray-700 outline-none placeholder:text-[#9ca3af]"
             />
 
+            {/* Search button — primary green (was brand-blue) */}
             <button
               type="submit"
               aria-label="Search"
-              className="h-14 w-16 md:w-[68px] flex items-center justify-center bg-brand-blue hover:bg-brand-blueHover transition-colors"
+              className="h-14 w-16 md:w-[68px] flex items-center justify-center transition-colors"
+              style={{ backgroundColor: PRIMARY_GREEN }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#0d8f87"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = PRIMARY_GREEN; }}
+              onFocus={(e)      => { e.currentTarget.style.backgroundColor = "#0d8f87"; }}
+              onBlur={(e)       => { e.currentTarget.style.backgroundColor = PRIMARY_GREEN; }}
             >
               <svg
                 width="22" height="22" viewBox="0 0 24 24"
@@ -74,7 +84,7 @@ export default function SiteHeader() {
           </form>
         </div>
 
-        {/* Right — Language + Login + Logo */}
+        {/* Right — Language switcher + Login + eMazingira logo */}
         <div className="flex items-center gap-3 md:gap-4 shrink-0">
           <LanguageSwitcher />
 
@@ -93,7 +103,6 @@ export default function SiteHeader() {
             Login
           </button>
 
-          {/* Logo — image instead of text */}
           <Image
             src="/images/emazingira-logo.svg"
             alt="eMazingira"

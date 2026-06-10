@@ -3,72 +3,131 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
 
-/**
- * Tanzania bounding box — map cannot be panned outside this area, and the
- * minZoom is sized so the whole country fits comfortably.
- */
-const TZ_BOUNDS = [
-  [-12.0, 29.0], // SW
-  [  0.0, 41.5], // NE
-];
-const TZ_CENTER  = [-6.5, 34.8];
-const MIN_ZOOM   = 5;
-const MAX_ZOOM   = 10;
+// ── Tanzania bounds & zoom ────────────────────────────────────────────────────
+// Tight bounds so the user cannot pan or zoom outside Tanzania.
+const TZ_BOUNDS    = [[-12.0, 29.0], [0.0, 41.5]];   // SW / NE corners
+const TZ_CENTER    = [-6.5, 34.8];
+const MIN_ZOOM     = 6;   // zoomed all the way out shows full Tanzania
+const MAX_ZOOM     = 10;
 const DEFAULT_ZOOM = 6;
 
-/**
- * geoBoundaries puts the region/district name in `shapeName`. We normalize
- * it to a slug so we can match it against our local `regions` list.
- */
+// ── Colors ───────────────────────────────────────────────────────────────────
+// Neutral fill for every unselected region — same for all of them.
+// Unselected regions use the theme primary at moderate opacity (old MODERATE = 0.48)
+const NEUTRAL_STROKE  = "#ffffff";
+const NEUTRAL_WEIGHT  = 0.8;
+const NEUTRAL_OPACITY = 0.48; // old MODERATE alpha
+
+const SELECTED_STROKE_W = 2.5;
+
 function slugify(name) {
   return String(name || "")
-    .toLowerCase()
-    .trim()
+    .toLowerCase().trim()
     .replace(/[\s_]+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
 }
 
-/**
- * Priority → fill-opacity modifier. A darker/bolder color means higher
- * priority; we express that by adjusting the fill opacity of the theme
- * primary color on top of a soft background.
- */
-const PRIORITY_ALPHA = {
-  "very-high": 0.92,
-  high:        0.70,
-  moderate:    0.48,
-  low:         0.26,
-};
-
 export default function LeafletMap({
+  viewMode,
   selectedRegion,
-  regions,          // our local region list with priority data
+  regions,
   onSelectRegion,
   showDistricts,
-  theme,            // { primary, dark, soft }
+  theme,
 }) {
-  const containerRef = useRef(null);
-  const mapRef       = useRef(null);
-  const layersRef    = useRef({ region: null, district: null });
-  const selRef       = useRef(selectedRegion);
-  const themeRef     = useRef(theme);
+  const containerRef   = useRef(null);
+  const mapRef         = useRef(null);
+  const layersRef      = useRef({ region: null, district: null });
+  const selRef         = useRef(selectedRegion);
+  const themeRef       = useRef(theme);
+  const viewModeRef    = useRef(viewMode);
   const regionsByIdRef = useRef({});
+  const destroyedRef   = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
   const [tooltip, setTooltip] = useState("");
 
-  // Keep refs in sync so event handlers see latest values
-  selRef.current   = selectedRegion;
-  themeRef.current = theme;
+  // Keep refs up to date every render so Leaflet event callbacks see fresh values
+  selRef.current      = selectedRegion;
+  themeRef.current    = theme;
+  viewModeRef.current = viewMode;
   regionsByIdRef.current = Object.fromEntries(
     (regions || []).map((r) => [r.id, r]),
   );
 
-  // ── Bootstrap Leaflet once ────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function mapAlive() {
+    return (
+      mapRef.current &&
+      !destroyedRef.current &&
+      mapRef.current._leaflet_id !== undefined
+    );
+  }
+
+  function safeRemoveLayer(map, layer) {
+    if (!layer) return;
+    try { map.removeLayer(layer); } catch {}
+  }
+
+  function safeRemoveMap() {
+    const map = mapRef.current;
+    mapRef.current = null;
+    if (!map) return;
+    try { map.remove(); } catch {}
+  }
+
+  // ── Style helpers ─────────────────────────────────────────────────────────
+
+  /**
+   * Returns the Leaflet path style for a feature.
+   * Selected region  → primary theme colour, clearly highlighted.
+   * Everything else  → same flat neutral colour (no heatmap categories).
+   */
+  function regionStyle(feature) {
+    const id         = slugify(feature?.properties?.shapeName);
+    const isNational = viewModeRef.current === "national";
+    const isSelected = id === selRef.current;
+    const t          = themeRef.current || {};
+    const primary    = t.primary || "#0b736c";
+    const dark       = t.dark    || "#0d3a30";
+
+    // National view — every region gets uniform moderate highlight
+    if (isNational) {
+      return {
+        fillColor:   primary,
+        fillOpacity: NEUTRAL_OPACITY,
+        color:       "#ffffff",
+        weight:      0.8,
+      };
+    }
+
+    // Regional view — selected highlighted, others neutral
+    if (isSelected) {
+      return {
+        fillColor:   primary,
+        fillOpacity: 0.82,
+        color:       dark,
+        weight:      SELECTED_STROKE_W,
+      };
+    }
+    return {
+      fillColor:   primary,
+      fillOpacity: NEUTRAL_OPACITY,
+      color:       NEUTRAL_STROKE,
+      weight:      NEUTRAL_WEIGHT,
+    };
+  }
+
+  function featureId(f)   { return slugify(f?.properties?.shapeName); }
+  function featureName(f) { return f?.properties?.shapeName || "Region"; }
+
+  // ── Bootstrap ─────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (mapRef.current) return;
-    let cancelled = false;
+    destroyedRef.current = false;
 
     const css = document.createElement("link");
     css.rel  = "stylesheet";
@@ -78,45 +137,54 @@ export default function LeafletMap({
     const js = document.createElement("script");
     js.src   = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
     js.async = true;
-    js.onload = () => { if (!cancelled) initMap(); };
+    js.onload = () => { if (!destroyedRef.current) initMap(); };
     document.head.appendChild(js);
 
     return () => {
-      cancelled = true;
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+      destroyedRef.current = true;
+      layersRef.current = { region: null, district: null };
+      safeRemoveMap();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function initMap() {
-    if (!containerRef.current || mapRef.current) return;
+    if (!containerRef.current || mapRef.current || destroyedRef.current) return;
     const L = window.L;
     if (!L) return;
 
     const bounds = L.latLngBounds(TZ_BOUNDS);
 
     const map = L.map(containerRef.current, {
-      center: TZ_CENTER,
-      zoom:       DEFAULT_ZOOM,
-      minZoom:    MIN_ZOOM,
-      maxZoom:    MAX_ZOOM,
-      maxBounds:  bounds,
-      maxBoundsViscosity: 1.0,   // hard clamp — can't drag outside
-      zoomControl: false,
+      center:    TZ_CENTER,
+      zoom:      DEFAULT_ZOOM,
+      minZoom:   MIN_ZOOM,
+      maxZoom:   MAX_ZOOM,
+      maxBounds: bounds,
+      maxBoundsViscosity: 1.0,
+      zoomControl:        false,
       attributionControl: false,
+      // Disable scroll-wheel zoom so the map doesn't fight page scrolling.
+      // Users can still zoom with the +/- buttons or pinch on touch.
+      scrollWheelZoom:    false,
+      // Also disable touch zoom interference on mobile
+      tap:                false,
     });
     mapRef.current = map;
+
+    // Enforce minZoom by also fitting to the Tanzania bounds immediately,
+    // and reset if the user somehow gets out of bounds.
+    map.setMinZoom(MIN_ZOOM);
+    map.setMaxZoom(MAX_ZOOM);
 
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       {
-        attribution: "© OpenStreetMap, © CartoDB",
-        subdomains: "abcd",
-        maxZoom: MAX_ZOOM,
-        bounds: bounds,
+        attribution: "© OpenStreetMap contributors, © CARTO",
+        subdomains:  "abcd",
+        maxZoom:     MAX_ZOOM,
+        // Tile layer also restricted to the same bounds
+        bounds:      bounds,
       },
     ).addTo(map);
 
@@ -125,38 +193,13 @@ export default function LeafletMap({
     loadRegions(L, map);
   }
 
-  /** Feature props from geoBoundaries: shapeName, shapeID, shapeISO */
-  function featureId(feature) {
-    return slugify(feature?.properties?.shapeName);
-  }
-  function featureName(feature) {
-    return feature?.properties?.shapeName || "Region";
-  }
-
-  function regionStyle(feature) {
-    const id       = featureId(feature);
-    const sel      = id === selRef.current;
-    const theme    = themeRef.current || {};
-    const primary  = theme.primary || "#0b736c";
-    const dark     = theme.dark    || "#0d3a30";
-    const soft     = theme.soft    || "#d6f5f2";
-
-    const localRegion = regionsByIdRef.current[id];
-    const priority = localRegion?.priority || "low";
-    const alpha    = PRIORITY_ALPHA[priority] ?? 0.3;
-
-    return {
-      fillColor:   sel ? dark : primary,
-      fillOpacity: sel ? 0.92 : alpha,
-      color:       sel ? dark : "#ffffff",
-      weight:      sel ? 2.5 : 0.8,
-    };
-  }
+  // ── Data loading ──────────────────────────────────────────────────────────
 
   async function loadRegions(L, map) {
     try {
       setError(null);
       const geojson = await api.geoRegions();
+      if (destroyedRef.current || !mapRef.current) return;
 
       const layer = L.geoJSON(geojson, {
         style: (f) => regionStyle(f),
@@ -166,23 +209,33 @@ export default function LeafletMap({
 
           fl.on("mouseover", function () {
             setTooltip(name);
-            if (id !== selRef.current)
-              this.setStyle({ fillOpacity: 0.88, weight: 1.5 });
+            // Only highlight unselected regions on hover
+            if (id !== selRef.current) {
+              try {
+                this.setStyle({
+                  fillColor:   themeRef.current?.primary || "#0b736c",
+                  fillOpacity: 0.45,
+                  weight:      1.2,
+                });
+              } catch {}
+            }
           });
+
           fl.on("mouseout", function () {
             setTooltip("");
-            if (id !== selRef.current) this.setStyle(regionStyle(feature));
+            try { this.setStyle(regionStyle(feature)); } catch {}
           });
+
           fl.on("click", () => {
-            // Only dispatch if the region exists in our local data
+            // Only dispatch if the region is in our local data list
             if (regionsByIdRef.current[id]) onSelectRegion?.(id);
           });
 
           fl.bindTooltip(`<strong>${name}</strong>`, {
-            permanent: false,
-            direction: "center",
-            sticky: true,
-            className: "tz-tip",
+            permanent:  false,
+            direction:  "center",
+            sticky:     true,
+            className:  "tz-tip",
           });
         },
       }).addTo(map);
@@ -191,6 +244,7 @@ export default function LeafletMap({
       setLoading(false);
       zoomToRegion(map, layer, selRef.current);
     } catch (e) {
+      if (destroyedRef.current) return;
       console.warn("Region GeoJSON failed:", e.message);
       setError(e.message || "Failed to load map data");
       setLoading(false);
@@ -198,20 +252,21 @@ export default function LeafletMap({
   }
 
   async function loadDistricts(L, map) {
-    if (layersRef.current.district) {
-      map.removeLayer(layersRef.current.district);
-      layersRef.current.district = null;
-    }
+    if (!mapAlive()) return;
+    safeRemoveLayer(map, layersRef.current.district);
+    layersRef.current.district = null;
+
     try {
       const geojson = await api.geoDistricts();
-      const theme   = themeRef.current || {};
+      if (!mapAlive()) return;
 
+      const t = themeRef.current || {};
       const layer = L.geoJSON(geojson, {
         style: () => ({
-          fillColor: theme.primary || "#0b736c",
-          fillOpacity: 0.35,
-          color: "white",
-          weight: 1.0,
+          fillColor:   t.primary || "#0b736c",
+          fillOpacity: 0.30,
+          color:       "white",
+          weight:      0.8,
         }),
         onEachFeature: (feature, fl) => {
           fl.bindTooltip(
@@ -223,57 +278,69 @@ export default function LeafletMap({
 
       layersRef.current.district = layer;
     } catch (e) {
-      console.warn("District GeoJSON failed:", e.message);
+      if (!destroyedRef.current) console.warn("District GeoJSON failed:", e.message);
     }
   }
 
   function zoomToRegion(map, regionLayer, regionId) {
-    let found = false;
-    regionLayer.eachLayer((fl) => {
-      if (featureId(fl.feature) === regionId) {
-        const b = fl.getBounds();
-        if (b.isValid()) {
-          map.fitBounds(b, { padding: [40, 40], maxZoom: MAX_ZOOM });
-          found = true;
+    if (!mapAlive() || !regionLayer) return;
+    try {
+      let found = false;
+      regionLayer.eachLayer((fl) => {
+        if (featureId(fl.feature) === regionId) {
+          const b = fl.getBounds();
+          if (b.isValid()) {
+            map.fitBounds(b, { padding: [50, 50], maxZoom: MAX_ZOOM });
+            found = true;
+          }
         }
+      });
+      if (!found) {
+        // Fall back to full Tanzania view
+        map.fitBounds(L.latLngBounds(TZ_BOUNDS), { padding: [20, 20] });
       }
-    });
-    if (!found) {
-      // Fall back to full country view
-      map.fitBounds(regionLayer.getBounds(), { padding: [20, 20] });
-    }
+    } catch {}
   }
 
-  // ── React to prop changes ─────────────────────────────────────────────
-  useEffect(() => {
-    if (!mapRef.current || !layersRef.current.region) return;
-    const map = mapRef.current;
-    const regionLayer = layersRef.current.region;
-    const L = window.L;
+  // ── React to prop changes ─────────────────────────────────────────────────
 
-    // Re-style every region to pick up new selection/theme colors
-    regionLayer.eachLayer((fl) => fl.setStyle(regionStyle(fl.feature)));
+  useEffect(() => {
+    if (!mapAlive() || !layersRef.current.region) return;
+    const map         = mapRef.current;
+    const regionLayer = layersRef.current.region;
+    const L           = window.L;
+
+    // Re-style all regions (selected one gets highlight, others get neutral)
+    try {
+      regionLayer.eachLayer((fl) => fl.setStyle(regionStyle(fl.feature)));
+    } catch {}
 
     if (showDistricts) {
       loadDistricts(L, map);
     } else {
-      if (layersRef.current.district) {
-        map.removeLayer(layersRef.current.district);
-        layersRef.current.district = null;
+      safeRemoveLayer(map, layersRef.current.district);
+      layersRef.current.district = null;
+      if (viewMode === "national") {
+        // Zoom to full Tanzania
+        try { map.fitBounds(L.latLngBounds(TZ_BOUNDS), { padding: [20, 20] }); } catch {}
+      } else {
+        zoomToRegion(map, regionLayer, selectedRegion);
       }
-      zoomToRegion(map, regionLayer, selectedRegion);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRegion, showDistricts, theme?.primary, theme?.dark]);
+  }, [viewMode, selectedRegion, showDistricts, theme?.primary, theme?.dark]);
 
-  const themeSoft = theme?.soft || "#d6f5f2";
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  const soft = theme?.soft || "#d6f5f2";
 
   return (
     <div className="relative h-full min-h-[460px]">
+      {/* Initial loading overlay */}
       {loading && (
         <div
           className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3"
-          style={{ backgroundColor: themeSoft }}
+          style={{ backgroundColor: soft }}
         >
           <div
             className="w-[34px] h-[34px] rounded-full border-[3px] border-gray-200 animate-[spin_.75s_linear_infinite]"
@@ -288,6 +355,7 @@ export default function LeafletMap({
         </div>
       )}
 
+      {/* Error state */}
       {error && !loading && (
         <div className="absolute inset-0 z-20 bg-red-50 flex flex-col items-center justify-center gap-2 p-6 text-center">
           <span className="text-sm font-bold text-red-700">Map data unavailable</span>
@@ -295,38 +363,35 @@ export default function LeafletMap({
         </div>
       )}
 
+      {/* Map container */}
       <div ref={containerRef} className="w-full h-full" />
 
+      {/* Hover tooltip */}
       {tooltip && (
-        <div className="absolute bottom-[52px] left-2.5 z-[1000] bg-white rounded px-2.5 py-1 text-[12.5px] font-bold shadow-tooltip border border-gray-200 pointer-events-none"
-             style={{ color: theme?.dark || "#0d3a30" }}>
+        <div
+          className="absolute bottom-[14px] left-2.5 z-[1000] bg-white rounded px-2.5 py-1 text-[12.5px] font-bold shadow border border-gray-200 pointer-events-none"
+          style={{ color: theme?.dark || "#0d3a30" }}
+        >
           {tooltip}
         </div>
       )}
 
-      {/* Legend — 4 shades of the module's primary color */}
-      <div className="absolute bottom-2.5 left-2.5 z-[1000] bg-white rounded px-2.5 py-2 shadow-tooltip border border-gray-200">
-        {[
-          { label: "VERY HIGH", alpha: 0.92 },
-          { label: "HIGH",      alpha: 0.70 },
-          { label: "MODERATE",  alpha: 0.48 },
-          { label: "LOW",       alpha: 0.26 },
-        ].map((l) => (
-          <div key={l.label} className="flex items-center gap-1.5 mb-1 last:mb-0">
-            <span
-              className="w-4 h-3.5 border border-black/10"
-              style={{
-                backgroundColor: theme?.primary || "#0b736c",
-                opacity: l.alpha,
-              }}
-              aria-hidden="true"
-            />
-            <span className="text-[10px] font-semibold text-gray-600 tracking-wider">
-              {l.label}
-            </span>
-          </div>
-        ))}
-      </div>
+      {/* Selected region label — replaces the old legend */}
+      {!loading && (
+        <div
+          className="absolute top-2.5 left-2.5 z-[1000] flex items-center gap-1.5 bg-white rounded-full px-3 py-1 shadow border border-gray-100 pointer-events-none"
+        >
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: theme?.primary || "#0b736c" }}
+          />
+          <span className="text-[11.5px] font-semibold text-gray-700">
+            {viewMode === "national"
+              ? "Tanzania — National View"
+              : ((regions || []).find((r) => r.id === selectedRegion)?.name || selectedRegion)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

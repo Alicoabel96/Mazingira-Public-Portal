@@ -1,8 +1,9 @@
 /**
- * API client — the single entry point for the browser to talk to our backend.
+ * API client — single entry point for the browser to talk to the backend.
  *
- * Every function here hits a route handler in `src/app/api/`. When we swap the
- * in-memory `src/lib/db/data.js` for a real DB, no client code changes.
+ * Every function hits a Next.js route handler in `src/app/api/`.
+ * When we swap in-memory mock data for a real database or external API,
+ * only the route handlers change — this client stays the same.
  */
 
 export class ApiError extends Error {
@@ -34,22 +35,45 @@ async function request(path, init) {
   return json.data;
 }
 
-// ─── Reads ───────────────────────────────────────────────────────────────────
 export const api = {
-  regions: () => request("/api/regions"),
-  region:  (id) => request(`/api/regions/${encodeURIComponent(id)}`),
+  // ── Regions ──────────────────────────────────────────────────────────────
+  regions: () =>
+    request("/api/regions"),
 
-  modules: () => request("/api/modules"),
+  region: (id) =>
+    request(`/api/regions/${encodeURIComponent(id)}`),
 
-  dashboard: (moduleId, regionId) =>
-    request(
-      `/api/modules/${encodeURIComponent(moduleId)}/regions/${encodeURIComponent(regionId)}`,
-    ),
+  /**
+   * Returns ["All Districts", ...district names] for a region.
+   * Calls GET /api/regions/[id]/districts
+   */
+  districts: (regionId) =>
+    request(`/api/regions/${encodeURIComponent(regionId)}/districts`),
 
+  // ── Modules ───────────────────────────────────────────────────────────────
+  modules: () =>
+    request("/api/modules"),
+
+  /**
+   * Fetch dashboard data.
+   *
+   * @param {string}      moduleId
+   * @param {string}      regionId
+   * @param {string|null} districtId  — pass null or omit for region-level data
+   */
+  dashboard: (moduleId, regionId, districtId = null) => {
+    const base = `/api/modules/${encodeURIComponent(moduleId)}/regions/${encodeURIComponent(regionId)}`;
+    const url  = districtId && districtId !== "All Districts"
+      ? `${base}?district=${encodeURIComponent(districtId)}`
+      : base;
+    return request(url);
+  },
+
+  // ── Other ─────────────────────────────────────────────────────────────────
   stats:  () => request("/api/stats"),
   slides: () => request("/api/slides"),
 
-  // Geographic boundaries (proxied from geoBoundaries.org)
+  // Geographic boundaries (GeoJSON for the Leaflet map)
   geoRegions:   () => request("/api/geo/regions"),
   geoDistricts: () => request("/api/geo/districts"),
 };
